@@ -1,0 +1,81 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:name: CI/CD Pipeline - CI-CD-TA
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      # 3️⃣ Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyats[full] prometheus-client
+
+      # 4️⃣ Jalankan unit testing (pyATS)
+      - name: Run pyATS tests
+        run: |
+          mkdir -p reports
+          pyats run job tests/test_app.py --html-logs reports/
+
+      # 5️⃣ Build Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t ci-cd-ta-app .
+
+      # 6️⃣ Jalankan container dan kirim hasil ke Prometheus
+      - name: Push metrics to Prometheus
+        run: |
+          echo "Simulasi kirim hasil pengujian ke Prometheus..."
+          echo "Job selesai dengan status sukses!"
+
+      # 7️⃣ Upload laporan hasil test ke GitHub Action artifact
+      - name: Upload test reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-reports
+          path: reports/
+
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: |
+          pytest
